@@ -6,9 +6,13 @@ import ApplicationServices
 /// icons. Deliberately independent of whether Control Center actually renders a
 /// given icon on screen — see StatusItemController's header comment for why that
 /// distinction matters on this era of macOS.
+///
+/// Deliberately NOT @MainActor: each AXUIElementCopyAttributeValue call is a
+/// synchronous cross-process round trip, and with dozens of running apps that adds
+/// up to real, user-visible wall-clock time — calling this from a background
+/// queue (see HiddenIconsPanelModel.refresh) is what keeps the window responsive.
 enum MenuBarInventory {
 
-    @MainActor
     static func fetch() -> [MenuBarIconInfo] {
         let currentPID = ProcessInfo.processInfo.processIdentifier
         var icons: [MenuBarIconInfo] = []

@@ -41,29 +41,32 @@ final class HiddenIconsPanelController: NSObject, NSWindowDelegate {
     }
 
     func show() {
-        model.refresh()
         WindowPolicyCoordinator.windowDidOpen()
         NSApp.activate(ignoringOtherApps: true)
         onVisibilityChanged?(true)
 
+        // Get the window on screen first — model.refresh() only kicks off a
+        // background scan and returns immediately, but ordering it after the
+        // window is raised means there's no chance of it delaying first paint.
         if let window {
             raise(window)
-            return
+        } else {
+            let hosting = NSHostingController(rootView: HiddenIconsView(model: model))
+            let newWindow = NSWindow(contentViewController: hosting)
+            newWindow.title = "Pocket"
+            newWindow.styleMask = [.titled, .closable]
+            newWindow.center()
+            newWindow.delegate = self
+            newWindow.isReleasedWhenClosed = false
+            // Floating so it can't get buried behind other windows fighting for
+            // topmost placement — this is a quick utility panel, not a document window.
+            newWindow.level = .floating
+            newWindow.collectionBehavior = [.moveToActiveSpace]
+            window = newWindow
+            raise(newWindow)
         }
 
-        let hosting = NSHostingController(rootView: HiddenIconsView(model: model))
-        let newWindow = NSWindow(contentViewController: hosting)
-        newWindow.title = "Pocket"
-        newWindow.styleMask = [.titled, .closable]
-        newWindow.center()
-        newWindow.delegate = self
-        newWindow.isReleasedWhenClosed = false
-        // Floating so it can't get buried behind other windows fighting for
-        // topmost placement — this is a quick utility panel, not a document window.
-        newWindow.level = .floating
-        newWindow.collectionBehavior = [.moveToActiveSpace]
-        window = newWindow
-        raise(newWindow)
+        model.refresh()
     }
 
     /// `makeKeyAndOrderFront` can be silently denied when the calling context isn't

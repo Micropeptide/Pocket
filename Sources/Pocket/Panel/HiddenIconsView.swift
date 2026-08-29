@@ -9,6 +9,8 @@ struct HiddenIconsView: View {
 
             if !model.isAccessibilityGranted {
                 permissionPrompt
+            } else if model.icons.isEmpty && model.isLoading {
+                loadingState
             } else if model.icons.isEmpty {
                 emptyState
             } else {
@@ -16,7 +18,16 @@ struct HiddenIconsView: View {
             }
         }
         .frame(width: 320, height: 420)
-        .onAppear { model.refresh() }
+    }
+
+    private var loadingState: some View {
+        VStack(spacing: 8) {
+            Spacer()
+            ProgressView()
+                .controlSize(.small)
+            Spacer()
+        }
+        .frame(maxWidth: .infinity)
     }
 
     private var header: some View {
