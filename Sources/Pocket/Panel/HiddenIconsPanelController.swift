@@ -1,14 +1,11 @@
 import SwiftUI
 import AppKit
 
-/// Pocket's primary way of reaching hidden-zone icons. On this era of macOS, Control
-/// Center hosts every menu-bar item and runs its own opaque overflow/priority system
-/// that doesn't reliably respond to the classic "grow a spacer" trick — verified
-/// empirically, not assumed (see StatusItemController's header comment). This panel
-/// sidesteps that entirely: it lists every app's menu-bar item via AX, independent of
-/// whether Control Center currently renders it, and opens one on click via
-/// AXUIElementPerformAction(kAXPressAction) — which works regardless of on-screen
-/// placement.
+/// Pocket's core window: a live list of every app's menu-bar icon, built via AX
+/// independent of whether Control Center currently renders a given one on screen.
+/// Clicking an entry opens it with AXUIElementPerformAction(kAXPressAction), which
+/// works regardless of on-screen placement — see StatusItemController's header for
+/// why that matters more than it sounds like it should on this era of macOS.
 ///
 /// Pocket normally has no Dock icon (menu-bar-only accessory app). While this panel is
 /// open it temporarily gets one, so it behaves like a normal window; the icon goes away
@@ -22,6 +19,14 @@ final class HiddenIconsPanelController: NSObject, NSWindowDelegate {
         get { model.onOpenSettings }
         set { model.onOpenSettings = newValue }
     }
+
+    /// Fires with `true` right after the panel opens and `false` right after it
+    /// closes — lets AutoHideController/FullscreenObserver arm/disarm without
+    /// depending on StatusItemController, which no longer tracks any state of its
+    /// own now that there's no separate hide/show mechanism.
+    var onVisibilityChanged: ((Bool) -> Void)?
+
+    var isOpen: Bool { window?.isVisible ?? false }
 
     func toggle() {
         if let window, window.isVisible {
@@ -39,6 +44,7 @@ final class HiddenIconsPanelController: NSObject, NSWindowDelegate {
         model.refresh()
         WindowPolicyCoordinator.windowDidOpen()
         NSApp.activate(ignoringOtherApps: true)
+        onVisibilityChanged?(true)
 
         if let window {
             raise(window)
@@ -74,5 +80,6 @@ final class HiddenIconsPanelController: NSObject, NSWindowDelegate {
     func windowWillClose(_ notification: Notification) {
         window = nil
         WindowPolicyCoordinator.windowDidClose()
+        onVisibilityChanged?(false)
     }
 }

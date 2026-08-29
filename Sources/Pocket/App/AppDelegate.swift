@@ -13,14 +13,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let controller = StatusItemController()
         let panel = HiddenIconsPanelController()
         let settings = SettingsWindowController()
-        let autoHide = AutoHideController(collapse: { [weak controller, weak panel] in
-            controller?.collapse()
+        let autoHide = AutoHideController(collapse: { [weak panel] in
             panel?.close()
         })
 
-        controller.onStateChanged = { [weak autoHide] isExpanded in
-            autoHide?.statusChanged(isExpanded: isExpanded)
+        panel.onVisibilityChanged = { [weak autoHide] isOpen in
+            autoHide?.statusChanged(isExpanded: isOpen)
         }
+        panel.onOpenSettings = { [weak settings] in
+            settings?.show()
+        }
+
         controller.onQuit = {
             NSApp.terminate(nil)
         }
@@ -28,21 +31,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             settings?.show()
         }
         controller.onOpenInventory = { [weak panel] in
-            panel?.show()
-        }
-        panel.onOpenSettings = { [weak settings] in
-            settings?.show()
+            panel?.toggle()
         }
 
         let fullscreen = FullscreenObserver()
-        fullscreen.onChange = { [weak controller] isFullscreen in
-            guard isFullscreen, Defaults.autoHideOnFullscreen, controller?.isExpanded == true else { return }
-            controller?.collapse()
+        fullscreen.onChange = { [weak panel] isFullscreen in
+            guard isFullscreen, Defaults.autoHideOnFullscreen, panel?.isOpen == true else { return }
+            panel?.close()
         }
 
-        HotkeyManager.shared.onPressed = { [weak controller, weak panel] in
-            controller?.toggle()
-            panel?.show()
+        HotkeyManager.shared.onPressed = { [weak panel] in
+            panel?.toggle()
         }
         HotkeyManager.shared.registerFromDefaults()
 

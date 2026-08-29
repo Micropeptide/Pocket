@@ -10,16 +10,28 @@ import AppKit
 @MainActor
 enum WindowPolicyCoordinator {
     private static var openWindowCount = 0
+    private static var previousFrontmostApp: NSRunningApplication?
 
     static func windowDidOpen() {
+        if openWindowCount == 0 {
+            previousFrontmostApp = NSWorkspace.shared.frontmostApplication
+        }
         openWindowCount += 1
         NSApp.setActivationPolicy(.regular)
     }
 
     static func windowDidClose() {
         openWindowCount = max(0, openWindowCount - 1)
-        if openWindowCount == 0 {
-            NSApp.setActivationPolicy(.accessory)
+        guard openWindowCount == 0 else { return }
+
+        NSApp.setActivationPolicy(.accessory)
+        // Setting .accessory alone can leave a stale Dock icon while Pocket is
+        // still the active app — a documented macOS quirk, confirmed in testing.
+        // Explicitly handing focus back to whatever was active before Pocket's
+        // window opened is what actually makes the Dock drop the icon.
+        if let previousFrontmostApp, previousFrontmostApp.bundleIdentifier != Bundle.main.bundleIdentifier {
+            previousFrontmostApp.activate(options: [])
         }
+        previousFrontmostApp = nil
     }
 }

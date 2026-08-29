@@ -2,40 +2,19 @@ import AppKit
 import ApplicationServices
 
 /// Walks every running app's `AXExtrasMenuBar` (the private-but-widely-used AX
-/// attribute for an app's status-bar items) to build a live list of menu-bar icons,
-/// classified against Pocket's own spacer position.
-///
-/// This is deliberately independent of whether Control Center actually renders an
-/// icon on screen: on this macOS version Control Center hosts every item and runs
-/// its own opaque overflow/priority system that doesn't reliably respond to the
-/// classic "grow a spacer" trick (verified empirically — see StatusItemController's
-/// header). AX position + AXUIElementPerformAction(kAXPressAction) work reliably
-/// regardless, which is why the Inventory panel — not the raw menu bar — is Pocket's
-/// primary way of reaching hidden-zone icons.
+/// attribute for an app's status-bar items) to build a live list of menu-bar
+/// icons. Deliberately independent of whether Control Center actually renders a
+/// given icon on screen — see StatusItemController's header comment for why that
+/// distinction matters on this era of macOS.
 enum MenuBarInventory {
 
-    struct Result {
-        let icons: [MenuBarIconInfo]
-        let spacerMinX: CGFloat?
-    }
-
     @MainActor
-    static func fetch() -> Result {
+    static func fetch() -> [MenuBarIconInfo] {
         let currentPID = ProcessInfo.processInfo.processIdentifier
         var icons: [MenuBarIconInfo] = []
-        var spacerMinX: CGFloat?
 
-        for app in NSWorkspace.shared.runningApplications {
+        for app in NSWorkspace.shared.runningApplications where app.processIdentifier != currentPID {
             guard let children = extrasMenuBarChildren(for: app.processIdentifier), !children.isEmpty else { continue }
-
-            if app.processIdentifier == currentPID {
-                // Pocket's own items, created [toggle, spacer] in that order —
-                // only the spacer's X is needed, to classify everyone else.
-                if children.count >= 2, let x = positionX(of: children[1]) {
-                    spacerMinX = x
-                }
-                continue
-            }
 
             for child in children {
                 guard let x = positionX(of: child) else { continue }
@@ -44,29 +23,12 @@ enum MenuBarInventory {
                     appIcon: app.icon,
                     ownerPID: app.processIdentifier,
                     screenX: x,
-                    zone: .alwaysVisible, // reclassified below once spacerMinX is known
                     axElement: child
                 ))
             }
         }
 
-        let classified: [MenuBarIconInfo]
-        if let spacerMinX {
-            classified = icons.map { icon in
-                MenuBarIconInfo(
-                    appName: icon.appName,
-                    appIcon: icon.appIcon,
-                    ownerPID: icon.ownerPID,
-                    screenX: icon.screenX,
-                    zone: ZoneClassifier.classify(iconX: icon.screenX, spacerMinX: spacerMinX),
-                    axElement: icon.axElement
-                )
-            }
-        } else {
-            classified = icons
-        }
-
-        return Result(icons: classified.sorted { $0.screenX < $1.screenX }, spacerMinX: spacerMinX)
+        return icons.sorted { $0.appName.localizedCaseInsensitiveCompare($1.appName) == .orderedAscending }
     }
 
     private static func extrasMenuBarChildren(for pid: pid_t) -> [AXUIElement]? {

@@ -27,12 +27,12 @@ private struct GeneralSettingsTab: View {
 
             Divider().padding(.vertical, 4)
 
-            Text("Hiding icons").font(.headline)
-            Toggle("Hide icons again after clicking elsewhere", isOn: $state.autoHideOnOutsideClick)
-            Toggle("Hide icons when the frontmost app goes fullscreen (best effort)", isOn: $state.autoHideOnFullscreen)
+            Text("Icon list window").font(.headline)
+            Toggle("Close after clicking elsewhere", isOn: $state.autoHideOnOutsideClick)
+            Toggle("Close when the frontmost app goes fullscreen (best effort)", isOn: $state.autoHideOnFullscreen)
 
             HStack {
-                Text("Auto-hide after idle:")
+                Text("Auto-close after idle:")
                 Stepper(
                     value: $state.autoHideIdleSeconds,
                     in: 0...120,
@@ -77,7 +77,7 @@ private struct AboutSettingsTab: View {
             Text("Version \(version)").font(.caption).foregroundStyle(.secondary)
             Text("Your menu bar, in your pocket.")
                 .font(.callout).foregroundStyle(.secondary)
-            Text("Organizes a crowded menu bar: sort icons into always-visible and hidden groups with a Cmd-drag, then reach everything — hidden or not — from one click.")
+            Text("One click on Pocket's icon lists every app's menu bar icon, whether or not your Mac currently has room to show it — click any entry to open it directly.")
                 .font(.footnote).foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
                 .frame(maxWidth: 380)

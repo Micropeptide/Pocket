@@ -14,10 +14,8 @@ struct HiddenIconsView: View {
             } else {
                 list
             }
-
-            footer
         }
-        .frame(width: 340, height: 460)
+        .frame(width: 320, height: 420)
         .onAppear { model.refresh() }
     }
 
@@ -44,14 +42,6 @@ struct HiddenIconsView: View {
         .padding()
     }
 
-    private var footer: some View {
-        Text("Tip: hold ⌘ and drag any menu bar icon left or right of Pocket's arrow to sort it into Hidden or Always Visible.")
-            .font(.caption)
-            .foregroundStyle(.secondary)
-            .fixedSize(horizontal: false, vertical: true)
-            .padding()
-    }
-
     private var permissionPrompt: some View {
         VStack(spacing: 12) {
             Spacer()
@@ -74,7 +64,7 @@ struct HiddenIconsView: View {
     private var emptyState: some View {
         VStack(spacing: 8) {
             Spacer()
-            Text("No hidden icons found.")
+            Text("No menu bar icons found.")
                 .foregroundStyle(.secondary)
             Spacer()
         }
@@ -83,26 +73,13 @@ struct HiddenIconsView: View {
 
     private var list: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
-                section(title: "Hidden", icons: model.icons.filter { $0.zone == .hidden })
-                section(title: "Always Visible", icons: model.icons.filter { $0.zone == .alwaysVisible })
-            }
-            .padding(.horizontal)
-            .padding(.bottom)
-        }
-    }
-
-    @ViewBuilder
-    private func section(title: String, icons: [MenuBarIconInfo]) -> some View {
-        if !icons.isEmpty {
             VStack(alignment: .leading, spacing: 4) {
-                Text(title.uppercased())
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                ForEach(icons) { icon in
+                ForEach(model.icons) { icon in
                     row(for: icon)
                 }
             }
+            .padding(.horizontal)
+            .padding(.bottom)
         }
     }
 

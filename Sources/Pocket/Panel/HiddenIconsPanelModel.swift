@@ -14,7 +14,7 @@ final class HiddenIconsPanelModel: ObservableObject {
             icons = []
             return
         }
-        icons = MenuBarInventory.fetch().icons
+        icons = MenuBarInventory.fetch()
     }
 
     func requestAccessibility() {
